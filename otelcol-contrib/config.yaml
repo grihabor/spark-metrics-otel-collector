@@ -1,0 +1,32 @@
+receivers:
+  carbon:
+    endpoint: 0.0.0.0:2003
+    transport: tcp
+processors:
+  batch:
+  transform/add_spark_application_id:
+    error_mode: propagate
+    metric_statements:
+      - context: metric
+        statements:
+          - set(resource.attributes["spark.application-id"], ExtractPatterns(name, "^(?P<spark_application_id>[^.]+)\\..*$")["spark_application_id"])
+  metricstransform/rename_spark_metrics:
+    transforms:
+      - include: ^([^.]+)\.(.*)$$
+        match_type: regexp
+        action: update
+        new_name: spark.$${2}
+exporters:
+  debug:
+    verbosity: detailed
+service:
+  pipelines:
+    metrics/prod:
+      receivers:
+        - carbon
+      processors:
+        - transform/add_spark_application_id
+        - metricstransform/rename_spark_metrics
+        - batch
+      exporters:
+        - debug

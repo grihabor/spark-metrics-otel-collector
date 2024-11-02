@@ -1,0 +1,16 @@
+services:
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.112.0
+    volumes:
+      - ./otelcol-contrib:/etc/otelcol-contrib
+    ports:
+      - 2003:2003
+  spark:
+    depends_on:
+      - otel-collector
+    build: .
+    command: python /app/run.py
+    environment:
+      - SPARK_CONF_DIR=/etc/spark/conf
+    volumes:
+      - ./spark:/etc/spark
